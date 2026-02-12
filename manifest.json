@@ -1,35 +1,38 @@
 {
-  "name": "Insta Saver",
-  "description": "Download Instagram stories, posts, and reels from the three-dot menu",
-  "version": "1.0",
-  "manifest_version": 3,
-  "action": {
-    "default_popup": "insta save.html"
-  },
-  "background": {
-    "scripts": [
-      "scripts/background.js"
-    ]
-  },
-  "permissions": [
-    "downloads",
-    "activeTab",
-    "cookies"
-  ],
-  "host_permissions": [
-    "https://www.instagram.com/*",
-    "https://*.cdninstagram.com/*",
-    "https://*.fbcdn.net/*"
-  ],
-  "content_scripts": [
-    {
-      "js": [
-        "scripts/content.js"
-      ],
-      "matches": [
-        "https://www.instagram.com/*"
-      ],
-      "run_at": "document_idle"
+    "name": "Insta Saver",
+    "description": "Download Instagram stories, posts, and reels from the three-dot menu",
+    "version": "1.0",
+    "manifest_version": 3,
+    "action": {
+        "default_popup": "InstaLoader.html"
+    },
+    "background": {
+        "service_worker": "scripts/background.js"
+    },
+    "permissions": [
+        "downloads",
+        "activeTab",
+        "cookies"
+    ],
+    "host_permissions": [
+        "https://www.instagram.com/*",
+        "https://*.cdninstagram.com/*",
+        "https://*.fbcdn.net/*"
+    ],
+    "content_scripts": [
+        {
+            "js": [
+                "scripts/content.js"
+            ],
+            "matches": [
+                "https://www.instagram.com/*"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "icons": {
+        "16": "images/icon-16.png",
+        "48": "images/icon-48.png",
+        "128": "images/icon-128.png"
     }
-  ]
 }

@@ -11,6 +11,7 @@
   const BUTTON_LABEL = "Download Story";
   const POST_ALL_LABEL = "Download All Media";
   const POST_CURRENT_LABEL = "Download Current";
+  const POST_SINGLE_LABEL = "Download";
   const REEL_LABEL = "Download Reel";
 
   // Texts that appear in story menus
@@ -145,18 +146,19 @@
     });
   }
 
-  function downloadPost(shortcode) {
+  function downloadPost(shortcode, type = "post") {
     if (!shortcode) {
       return Promise.resolve({ success: false, error: "Could not find post" });
     }
     return sendMessage({
       action: "downloadPost",
       shortcode: shortcode,
+      type: type,
       csrftoken: getCsrfToken(),
     });
   }
 
-  function downloadPostSingle(shortcode, index) {
+  function downloadPostSingle(shortcode, index, type = "post") {
     if (!shortcode) {
       return Promise.resolve({ success: false, error: "Could not find post" });
     }
@@ -164,8 +166,68 @@
       action: "downloadPostSingle",
       shortcode: shortcode,
       index: index,
+      type: type,
       csrftoken: getCsrfToken(),
     });
+  }
+
+  function findBestVisibleArticle() {
+    const articles = document.querySelectorAll("article");
+    let bestArticle = null;
+    let bestDist = Infinity;
+    const yCentre = window.innerHeight / 2;
+
+    for (const article of articles) {
+      const rect = article.getBoundingClientRect();
+      const dist = Math.abs(rect.top + rect.height / 2 - yCentre);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestArticle = article;
+      }
+    }
+
+    return bestArticle;
+  }
+
+  function detectCarouselDotsCount(article) {
+    if (!article) return 0;
+
+    const allDivs = article.querySelectorAll("div");
+    for (const container of allDivs) {
+      const kids = Array.from(container.children);
+      if (kids.length < 2 || kids.length > 20) continue;
+
+      let allSmall = true;
+      for (const kid of kids) {
+        const rect = kid.getBoundingClientRect();
+        if (rect.width > 14 || rect.height > 14 || rect.width < 2) {
+          allSmall = false;
+          break;
+        }
+      }
+      if (!allSmall) continue;
+
+      const classMap = {};
+      for (const kid of kids) {
+        const className = kid.className;
+        classMap[className] = (classMap[className] || 0) + 1;
+      }
+
+      const entries = Object.entries(classMap);
+      if (entries.length !== 2) continue;
+
+      const hasSingleActiveClass = entries.some(([, count]) => count === 1);
+      if (hasSingleActiveClass) return kids.length;
+    }
+
+    return 0;
+  }
+
+  function getPostMediaCount() {
+    const article = findBestVisibleArticle();
+    const dotsCount = detectCarouselDotsCount(article);
+    if (dotsCount > 1) return dotsCount;
+    return 1;
   }
 
   // Detect which carousel slide is currently active (0-based index).
@@ -180,15 +242,7 @@
 
     // Strategy 2: dot indicators in the feed / FYP
     // Find the article closest to the viewport centre
-    const articles = document.querySelectorAll("article");
-    let bestArticle = null;
-    let bestDist = Infinity;
-    const yCentre = window.innerHeight / 2;
-    for (const a of articles) {
-      const r = a.getBoundingClientRect();
-      const d = Math.abs(r.top + r.height / 2 - yCentre);
-      if (d < bestDist) { bestDist = d; bestArticle = a; }
-    }
+    const bestArticle = findBestVisibleArticle();
     if (!bestArticle) return 0;
 
     // Look for a container whose direct children are all small identically-
@@ -325,13 +379,25 @@
         const shortcode = findPostShortcodeFromMenu(menuContainer);
         if (!shortcode) return Promise.resolve({ success: false, error: "Post not found" });
         const idx = getCarouselIndex();
-        return downloadPostSingle(shortcode, idx);
+        return downloadPostSingle(shortcode, idx, "post");
       });
+
+      const mediaCount = getPostMediaCount();
+      if (mediaCount <= 1) {
+        const singleBtn = createDownloadBtn(template, POST_SINGLE_LABEL, () => {
+          const shortcode = findPostShortcodeFromMenu(menuContainer);
+          if (!shortcode) return Promise.resolve({ success: false, error: "Post not found" });
+          const idx = getCarouselIndex();
+          return downloadPostSingle(shortcode, idx, "post");
+        });
+        insertBefore(menuContainer, singleBtn, cancelBtn);
+        return;
+      }
 
       const allBtn = createDownloadBtn(template, POST_ALL_LABEL, () => {
         const shortcode = findPostShortcodeFromMenu(menuContainer);
         if (!shortcode) return Promise.resolve({ success: false, error: "Post not found" });
-        return downloadPost(shortcode);
+        return downloadPost(shortcode, "post");
       });
 
       // Insert both before Cancel (current first, then all)
@@ -369,7 +435,7 @@
         return;
       }
 
-      downloadPost(shortcode).then((response) => {
+      downloadPost(shortcode, "reel").then((response) => {
         if (response && response.success) {
           setNestedText(dlBtn, "Downloaded");
           styleReelButton(dlBtn, "#00c853");

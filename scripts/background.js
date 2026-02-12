@@ -73,6 +73,7 @@ function extractMediaUrl(item) {
 }
 
 // Main handler: fetch story from API and download
+// Main handler: fetch story from API and download
 async function handleDownloadStory(message) {
   const { username, storyId, csrftoken } = message;
 
@@ -92,7 +93,8 @@ async function handleDownloadStory(message) {
     // Step 4: Download
     const timestamp = Date.now();
     const ext = media.isVideo ? "mp4" : "jpg";
-    const filename = `insta_story_${username}_${timestamp}.${ext}`;
+    // Format: instaloader_profile_name_story_time
+    const filename = `instaloader_${username}_story_${timestamp}.${ext}`;
 
     return new Promise((resolve) => {
       chrome.downloads.download(
@@ -119,8 +121,9 @@ function handleDirectDownload(message) {
   const { url, isVideo, username } = message;
   const timestamp = Date.now();
   const ext = isVideo ? "mp4" : "jpg";
-  const prefix = username ? `insta_${username}` : "insta_post";
-  const filename = `${prefix}_${timestamp}.${ext}`;
+  const user = username || "user";
+  // Fallback downloads are usually posts
+  const filename = `instaloader_${user}_post_${timestamp}.${ext}`;
 
   return new Promise((resolve) => {
     chrome.downloads.download(
@@ -193,7 +196,8 @@ function extractPostMedia(item) {
 
 // Main handler: fetch post from API and download ALL media
 async function handleDownloadPost(message) {
-  const { shortcode, csrftoken } = message;
+  const { shortcode, csrftoken, type } = message;
+  // type can be "post" or "reel"
 
   try {
     const mediaId = shortcodeToMediaId(shortcode);
@@ -205,13 +209,14 @@ async function handleDownloadPost(message) {
 
     const username = mediaList[0].username || "post";
     const timestamp = Date.now();
+    const mediaType = type || "post";
     let downloaded = 0;
 
     for (let i = 0; i < mediaList.length; i++) {
       const media = mediaList[i];
       const ext = media.isVideo ? "mp4" : "jpg";
       const suffix = mediaList.length > 1 ? `_${i + 1}` : "";
-      const filename = `insta_${username}_${timestamp}${suffix}.${ext}`;
+      const filename = `instaloader_${username}_${mediaType}_${timestamp}${suffix}.${ext}`;
 
       await new Promise((resolve) => {
         chrome.downloads.download(
@@ -241,7 +246,7 @@ async function handleDownloadPost(message) {
 
 // Handler: download a SINGLE item from a post by index (0-based)
 async function handleDownloadPostSingle(message) {
-  const { shortcode, csrftoken, index } = message;
+  const { shortcode, csrftoken, index, type } = message;
 
   try {
     const mediaId = shortcodeToMediaId(shortcode);
@@ -256,8 +261,9 @@ async function handleDownloadPostSingle(message) {
     const media = mediaList[idx];
     const username = media.username || "post";
     const timestamp = Date.now();
+    const mediaType = type || "post";
     const ext = media.isVideo ? "mp4" : "jpg";
-    const filename = `insta_${username}_${timestamp}.${ext}`;
+    const filename = `instaloader_${username}_${mediaType}_${timestamp}.${ext}`;
 
     return new Promise((resolve) => {
       chrome.downloads.download(
