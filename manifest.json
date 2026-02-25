@@ -1,5 +1,5 @@
 {
-    "name": "Insta Saver",
+    "name": "InstaLoader - Download Stories, Posts, and Reels",
     "description": "Download Instagram stories, posts, and reels from the three-dot menu",
     "version": "1.0",
     "manifest_version": 3,
@@ -10,14 +10,10 @@
         "service_worker": "scripts/background.js"
     },
     "permissions": [
-        "downloads",
-        "activeTab",
-        "cookies"
+        "downloads"
     ],
     "host_permissions": [
-        "https://www.instagram.com/*",
-        "https://*.cdninstagram.com/*",
-        "https://*.fbcdn.net/*"
+        "https://www.instagram.com/*"
     ],
     "content_scripts": [
         {
