@@ -223,17 +223,74 @@
     return 0;
   }
 
+  // Fallback carousel detection: count <li> slide elements that have
+  // translateX transforms AND contain media (img/video) inside a <ul>.
+  // Instagram carousels use this specific structure; plain grids don't.
+  function detectCarouselFromList(root) {
+    if (!root) return 0;
+    const uls = root.querySelectorAll("ul");
+    for (const ul of uls) {
+      const lis = Array.from(ul.querySelectorAll(":scope > li"));
+      if (lis.length < 2) continue;
+
+      let mediaCount = 0;
+      for (const li of lis) {
+        // Only count <li>'s that use translateX (carousel slide positioning)
+        const transform = li.style.transform || "";
+        const hasTranslate = /translateX\(/.test(transform);
+        if (hasTranslate && li.querySelector("img, video")) {
+          mediaCount++;
+        }
+      }
+
+      if (mediaCount >= 2) return mediaCount;
+    }
+    return 0;
+  }
+
+  // Detect carousel from the presence of both prev AND next navigation buttons
+  function detectCarouselFromButtons(root) {
+    if (!root) return false;
+    const buttons = root.querySelectorAll('button[aria-label]');
+    let hasNext = false;
+    let hasPrev = false;
+    for (const btn of buttons) {
+      const label = btn.getAttribute("aria-label").toLowerCase();
+      if (label === "next" || label === "go forward") hasNext = true;
+      if (label === "go back") hasPrev = true;
+    }
+    // Require both directions to avoid false positives from standalone buttons
+    return hasNext && hasPrev;
+  }
+
   function getPostMediaCount() {
     const article = findBestVisibleArticle();
+
+    // Strategy 1: dot indicators inside the article
     const dotsCount = detectCarouselDotsCount(article);
     if (dotsCount > 1) return dotsCount;
+
+    // Strategy 2: count <li> slides with translateX inside the article
+    const articleSlides = detectCarouselFromList(article);
+    if (articleSlides > 1) return articleSlides;
+
+    // Strategy 3: carousel nav buttons inside the article
+    if (article && detectCarouselFromButtons(article)) return 2;
+
+    // Strategy 4: document-wide scan ONLY when no <article> exists
+    // (e.g., on dedicated /p/SHORTCODE/ pages)
+    if (!article) {
+      const docSlides = detectCarouselFromList(document);
+      if (docSlides > 1) return docSlides;
+
+      if (detectCarouselFromButtons(document)) return 2;
+    }
+
     return 1;
   }
 
   // Detect which carousel slide is currently active (0-based index).
-  // 1. Post pages: URL contains ?img_index=N (1-based).
-  // 2. FYP / feed: find the dot-indicator container in the nearest article
-  //    and detect which dot has a unique extra class (the active one).
+  // Uses multiple strategies depending on context.
   function getCarouselIndex() {
     // Strategy 1: URL param (works on post pages opened from profile)
     const params = new URLSearchParams(window.location.search);
@@ -241,19 +298,28 @@
     if (imgIndex) return Math.max(0, parseInt(imgIndex, 10) - 1);
 
     // Strategy 2: dot indicators in the feed / FYP
-    // Find the article closest to the viewport centre
     const bestArticle = findBestVisibleArticle();
-    if (!bestArticle) return 0;
+    const dotIndex = getCarouselIndexFromDots(bestArticle);
+    if (dotIndex !== null) return dotIndex;
 
-    // Look for a container whose direct children are all small identically-
-    // sized elements (the carousel dots). The active dot has one extra CSS
-    // class compared to the others.
-    const allDivs = bestArticle.querySelectorAll("div");
+    // Strategy 3: <li> transform-based detection
+    // The visible slide is the one with translateX closest to 0.
+    const searchRoot = bestArticle || document;
+    const liIndex = getCarouselIndexFromTransforms(searchRoot);
+    if (liIndex !== null) return liIndex;
+
+    return 0;
+  }
+
+  // Detect active carousel index from dot indicators (original strategy)
+  function getCarouselIndexFromDots(root) {
+    if (!root) return null;
+
+    const allDivs = root.querySelectorAll("div");
     for (const container of allDivs) {
       const kids = Array.from(container.children);
       if (kids.length < 2 || kids.length > 20) continue;
 
-      // All children must be small (dot-sized)
       let allSmall = true;
       for (const kid of kids) {
         const kr = kid.getBoundingClientRect();
@@ -264,32 +330,58 @@
       }
       if (!allSmall) continue;
 
-      // Build a frequency map of className strings
       const classMap = {};
       for (const kid of kids) {
         const cn = kid.className;
         classMap[cn] = (classMap[cn] || 0) + 1;
       }
 
-      // We expect most dots to share the same className and exactly one
-      // dot to have a different (longer) className — the active one.
       const entries = Object.entries(classMap);
-      if (entries.length !== 2) continue; // should be exactly 2 variants
+      if (entries.length !== 2) continue;
 
-      // The active class is the one that appears only once
       let activeClass = null;
       for (const [cn, count] of entries) {
         if (count === 1) { activeClass = cn; break; }
       }
       if (!activeClass) continue;
 
-      // Find the index of the child with that class
       for (let i = 0; i < kids.length; i++) {
         if (kids[i].className === activeClass) return i;
       }
     }
 
-    return 0;
+    return null;
+  }
+
+  // Detect active carousel index from <li> translateX transforms.
+  // The currently visible slide has translateX closest to 0.
+  function getCarouselIndexFromTransforms(root) {
+    if (!root) return null;
+    const uls = root.querySelectorAll("ul");
+    for (const ul of uls) {
+      const lis = Array.from(ul.querySelectorAll(":scope > li"));
+      if (lis.length < 2) continue;
+
+      // Filter <li> elements that contain actual media
+      const mediaLis = lis.filter(li => li.querySelector("img, video"));
+      if (mediaLis.length < 2) continue;
+
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < mediaLis.length; i++) {
+        const transform = mediaLis[i].style.transform;
+        const m = transform && transform.match(/translateX\(([^)]+)px\)/);
+        if (m) {
+          const dist = Math.abs(parseFloat(m[1]));
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestIdx = i;
+          }
+        }
+      }
+      return bestIdx;
+    }
+    return null;
   }
 
   // ---------------------------------------------------------------
@@ -383,6 +475,7 @@
       });
 
       const mediaCount = getPostMediaCount();
+      console.log("[Insta Saver] Detected media count for post:", mediaCount);
       if (mediaCount <= 1) {
         const singleBtn = createDownloadBtn(template, POST_SINGLE_LABEL, () => {
           const shortcode = findPostShortcodeFromMenu(menuContainer);
