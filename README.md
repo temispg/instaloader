@@ -1,4 +1,8 @@
+
 # InstaLoader
+
+
+<img width="1000" height="251" alt="download_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24" src="https://github.com/user-attachments/assets/65b7491a-631c-4d7c-a50f-8811977d8a76" />
 
 A Chrome extension to download Instagram stories, posts, and reels directly from the three-dot menu.
 
