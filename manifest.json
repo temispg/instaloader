@@ -1,7 +1,7 @@
 {
     "name": "InstaLoader - Download Stories, Posts, and Reels",
     "description": "Download Instagram stories, posts, and reels from the three-dot menu",
-    "version": "1.0",
+    "version": "1.0.1",
     "manifest_version": 3,
     "action": {
         "default_popup": "InstaLoader.html"
