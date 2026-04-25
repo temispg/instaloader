@@ -8,13 +8,178 @@
 (function () {
   "use strict";
 
-  const BUTTON_LABEL = "Download Story";
-  const POST_ALL_LABEL = "Download All Media";
-  const POST_CURRENT_LABEL = "Download Current";
-  const POST_SINGLE_LABEL = "Download";
-  const REEL_LABEL = "Download Reel";
+  const UI_STRINGS = {
+    en: {
+      buttonStory: "Download Story",
+      buttonPostAll: "Download All Media",
+      buttonPostCurrent: "Download Current",
+      buttonPostSingle: "Download",
+      buttonReel: "Download Reel",
+      statusDownloading: "Downloading...",
+      statusDownloadedSingle: "Downloaded \u2713",
+      statusDownloadedMulti: (count, total) => `Downloaded ${count}/${total} \u2713`,
+      statusFailedRetry: "Failed - retry",
+      statusReelNotFound: "Reel not found!",
+    },
+    es: {
+      buttonStory: "Descargar historia",
+      buttonPostAll: "Descargar todo",
+      buttonPostCurrent: "Descargar actual",
+      buttonPostSingle: "Descargar",
+      buttonReel: "Descargar reel",
+      statusDownloading: "Descargando...",
+      statusDownloadedSingle: "Descargado \u2713",
+      statusDownloadedMulti: (count, total) => `Descargado ${count}/${total} \u2713`,
+      statusFailedRetry: "Fallo - reintentar",
+      statusReelNotFound: "No se encontro el reel",
+    },
+    pl: {
+      buttonStory: "Pobierz relacje",
+      buttonPostAll: "Pobierz wszystko",
+      buttonPostCurrent: "Pobierz biezacy",
+      buttonPostSingle: "Pobierz",
+      buttonReel: "Pobierz rolkę",
+      statusDownloading: "Pobieranie...",
+      statusDownloadedSingle: "Pobrano \u2713",
+      statusDownloadedMulti: (count, total) => `Pobrano ${count}/${total} \u2713`,
+      statusFailedRetry: "Blad - sprobuj ponownie",
+      statusReelNotFound: "Nie znaleziono rolki",
+    },
+    de: {
+      buttonStory: "Story herunterladen",
+      buttonPostAll: "Alle Medien herunterladen",
+      buttonPostCurrent: "Aktuelles herunterladen",
+      buttonPostSingle: "Herunterladen",
+      buttonReel: "Reel herunterladen",
+      statusDownloading: "Wird heruntergeladen...",
+      statusDownloadedSingle: "Heruntergeladen \u2713",
+      statusDownloadedMulti: (count, total) => `Heruntergeladen ${count}/${total} \u2713`,
+      statusFailedRetry: "Fehlgeschlagen - erneut versuchen",
+      statusReelNotFound: "Reel nicht gefunden",
+    },
+    uk: {
+      buttonStory: "Завантажити історію",
+      buttonPostAll: "Завантажити всі медіа",
+      buttonPostCurrent: "Завантажити поточне",
+      buttonPostSingle: "Завантажити",
+      buttonReel: "Завантажити рілс",
+      statusDownloading: "Завантаження...",
+      statusDownloadedSingle: "Завантажено \u2713",
+      statusDownloadedMulti: (count, total) => `Завантажено ${count}/${total} \u2713`,
+      statusFailedRetry: "Помилка - спробуйте ще раз",
+      statusReelNotFound: "Рілс не знайдено",
+    },
+    sv: {
+      buttonStory: "Ladda ner story",
+      buttonPostAll: "Ladda ner alla medier",
+      buttonPostCurrent: "Ladda ner aktuell",
+      buttonPostSingle: "Ladda ner",
+      buttonReel: "Ladda ner reel",
+      statusDownloading: "Laddar ner...",
+      statusDownloadedSingle: "Nedladdad \u2713",
+      statusDownloadedMulti: (count, total) => `Nedladdad ${count}/${total} \u2713`,
+      statusFailedRetry: "Misslyckades - forsok igen",
+      statusReelNotFound: "Reel hittades inte",
+    },
+    no: {
+      buttonStory: "Last ned story",
+      buttonPostAll: "Last ned alle medier",
+      buttonPostCurrent: "Last ned gjeldende",
+      buttonPostSingle: "Last ned",
+      buttonReel: "Last ned reel",
+      statusDownloading: "Laster ned...",
+      statusDownloadedSingle: "Nedlastet \u2713",
+      statusDownloadedMulti: (count, total) => `Nedlastet ${count}/${total} \u2713`,
+      statusFailedRetry: "Mislyktes - prov igjen",
+      statusReelNotFound: "Fant ikke reel",
+    },
+    nl: {
+      buttonStory: "Story downloaden",
+      buttonPostAll: "Alle media downloaden",
+      buttonPostCurrent: "Huidige downloaden",
+      buttonPostSingle: "Downloaden",
+      buttonReel: "Reel downloaden",
+      statusDownloading: "Downloaden...",
+      statusDownloadedSingle: "Gedownload \u2713",
+      statusDownloadedMulti: (count, total) => `Gedownload ${count}/${total} \u2713`,
+      statusFailedRetry: "Mislukt - opnieuw proberen",
+      statusReelNotFound: "Reel niet gevonden",
+    },
+    ru: {
+      buttonStory: "Скачать историю",
+      buttonPostAll: "Скачать все медиа",
+      buttonPostCurrent: "Скачать текущее",
+      buttonPostSingle: "Скачать",
+      buttonReel: "Скачать рилс",
+      statusDownloading: "Загрузка...",
+      statusDownloadedSingle: "Загружено \u2713",
+      statusDownloadedMulti: (count, total) => `Загружено ${count}/${total} \u2713`,
+      statusFailedRetry: "Ошибка - попробуйте снова",
+      statusReelNotFound: "Рилс не найден",
+    },
+    fr: {
+      buttonStory: "Telecharger la story",
+      buttonPostAll: "Telecharger tous les medias",
+      buttonPostCurrent: "Telecharger l'actuel",
+      buttonPostSingle: "Telecharger",
+      buttonReel: "Telecharger le reel",
+      statusDownloading: "Telechargement...",
+      statusDownloadedSingle: "Telecharge \u2713",
+      statusDownloadedMulti: (count, total) => `Telecharge ${count}/${total} \u2713`,
+      statusFailedRetry: "Echec - reessayer",
+      statusReelNotFound: "Reel introuvable",
+    },
+    ptbr: {
+      buttonStory: "Baixar story",
+      buttonPostAll: "Baixar toda a midia",
+      buttonPostCurrent: "Baixar atual",
+      buttonPostSingle: "Baixar",
+      buttonReel: "Baixar reel",
+      statusDownloading: "Baixando...",
+      statusDownloadedSingle: "Baixado \u2713",
+      statusDownloadedMulti: (count, total) => `Baixado ${count}/${total} \u2713`,
+      statusFailedRetry: "Falhou - tente novamente",
+      statusReelNotFound: "Reel nao encontrado",
+    },
+    ja: {
+      buttonStory: "ストーリーをダウンロード",
+      buttonPostAll: "すべてをダウンロード",
+      buttonPostCurrent: "現在の項目をダウンロード",
+      buttonPostSingle: "ダウンロード",
+      buttonReel: "リールをダウンロード",
+      statusDownloading: "ダウンロード中...",
+      statusDownloadedSingle: "ダウンロード済み \u2713",
+      statusDownloadedMulti: (count, total) => `ダウンロード済み ${count}/${total} \u2713`,
+      statusFailedRetry: "失敗 - 再試行",
+      statusReelNotFound: "リールが見つかりません",
+    },
+    zhcn: {
+      buttonStory: "下载快拍",
+      buttonPostAll: "下载全部媒体",
+      buttonPostCurrent: "下载当前内容",
+      buttonPostSingle: "下载",
+      buttonReel: "下载 Reels",
+      statusDownloading: "正在下载...",
+      statusDownloadedSingle: "已下载 \u2713",
+      statusDownloadedMulti: (count, total) => `已下载 ${count}/${total} \u2713`,
+      statusFailedRetry: "失败 - 重试",
+      statusReelNotFound: "未找到 Reels",
+    },
+  };
 
-  const CANCEL_MARKER_TEXTS = ["cancel", "cancelar"];
+  const CANCEL_MARKER_TEXTS = [
+    "cancel",
+    "cancelar",
+    "anuluj",
+    "abbrechen",
+    "скасувати",
+    "avbryt",
+    "annuleren",
+    "отмена",
+    "annuler",
+    "キャンセル",
+    "取消",
+  ];
 
   // Texts that appear in story menus
   const STORY_MARKER_TEXTS = [
@@ -24,6 +189,39 @@
     "reportar contenido inapropiado",
     "reportar",
     "informacion sobre esta cuenta",
+    "zglos niestosowny post",
+    "zglos",
+    "informacje o tym koncie",
+    "als unangemessen melden",
+    "melden",
+    "infos zu diesem konto",
+    "поскаржитися на неприйнятні матеріали",
+    "поскаржитися",
+    "про цей обліковий запис",
+    "anmal olampligt innehall",
+    "anmal",
+    "om det har kontot",
+    "rapporter som upassende",
+    "rapporter",
+    "om denne kontoen",
+    "rapporteren als ongepast",
+    "rapporteren",
+    "over dit account",
+    "пожаловаться на неуместный контент",
+    "пожаловаться",
+    "об аккаунте",
+    "signaler comme inapproprie",
+    "signaler",
+    "a propos de ce compte",
+    "denunciar conteudo inadequado",
+    "denunciar",
+    "sobre essa conta",
+    "不適切な投稿を報告",
+    "報告する",
+    "このアカウントについて",
+    "举报不当内容",
+    "举报",
+    "账户简介",
   ];
 
   // Texts that appear in feed post/reel menus
@@ -47,6 +245,103 @@
     "insertar",
     "informacion sobre esta cuenta",
     "cancelar",
+    "zglos",
+    "przestan obserwowac",
+    "dodaj do ulubionych",
+    "przejdz do posta",
+    "udostepnij",
+    "kopiuj link",
+    "kod osadzania",
+    "informacje o tym koncie",
+    "anuluj",
+    "melden",
+    "nicht mehr folgen",
+    "zu favoriten hinzufugen",
+    "beitrag ansehen",
+    "teilen in",
+    "link kopieren",
+    "einbetten",
+    "infos zu diesem konto",
+    "abbrechen",
+    "поскаржитися",
+    "не стежити",
+    "додати у вибране",
+    "перейти до допису",
+    "поширити в",
+    "копіювати посилання",
+    "вставити",
+    "про цей обліковий запис",
+    "скасувати",
+    "anmal",
+    "sluta folja",
+    "lagg till i favoriter",
+    "ga till inlagget",
+    "dela pa",
+    "kopiera lanken",
+    "badda in",
+    "om det har kontot",
+    "avbryt",
+    "rapporter",
+    "slutt a folge",
+    "legg til i favoritter",
+    "ga til innlegg",
+    "del her",
+    "kopier lenke",
+    "bygg inn",
+    "om denne kontoen",
+    "rapporteren",
+    "niet meer volgen",
+    "toevoegen aan favorieten",
+    "naar bericht gaan",
+    "delen via",
+    "link kopieren",
+    "insluiten",
+    "over dit account",
+    "annuleren",
+    "пожаловаться",
+    "отменить подписку",
+    "добавить в избранное",
+    "перейти к публикации",
+    "поделиться",
+    "копировать ссылку",
+    "вставить на сайт",
+    "об аккаунте",
+    "отмена",
+    "signaler",
+    "ne plus suivre",
+    "ajouter aux favoris",
+    "acceder a la publication",
+    "partager sur",
+    "copier le lien",
+    "integrer",
+    "a propos de ce compte",
+    "annuler",
+    "denunciar",
+    "deixar de seguir",
+    "adicionar aos favoritos",
+    "ir para o post",
+    "compartilhar",
+    "copiar link",
+    "incorporar",
+    "sobre essa conta",
+    "報告する",
+    "フォローをやめる",
+    "お気に入りに追加",
+    "投稿へ移動",
+    "シェア先",
+    "リンクをコピー",
+    "埋め込み",
+    "このアカウントについて",
+    "キャンセル",
+    "举报",
+    "取关",
+    "加入特别关注",
+    "打开帖子",
+    "分享到",
+    "复制链接",
+    "内嵌",
+    "账户简介",
+    "取消",
   ];
 
   const REEL_REPORT_MARKER_TEXTS = [
@@ -54,10 +349,60 @@
     "reportar",
     "report inappropriate",
     "reportar contenido inapropiado",
+    "zglos niestosowny post",
+    "zglos",
+    "als unangemessen melden",
+    "melden",
+    "поскаржитися на неприйнятні матеріали",
+    "поскаржитися",
+    "anmal olampligt innehall",
+    "anmal",
+    "rapporter som upassende",
+    "rapporter",
+    "rapporteren als ongepast",
+    "rapporteren",
+    "пожаловаться на неуместный контент",
+    "пожаловаться",
+    "signaler comme inapproprie",
+    "signaler",
+    "denunciar conteudo inadequado",
+    "denunciar",
+    "不適切な投稿を報告",
+    "報告する",
+    "举报不当内容",
+    "举报",
   ];
 
-  const REEL_GOTO_POST_MARKER_TEXTS = ["go to post", "ir a la publicacion"];
-  const REEL_COPY_LINK_MARKER_TEXTS = ["copy link", "copiar enlace"];
+  const REEL_GOTO_POST_MARKER_TEXTS = [
+    "go to post",
+    "ir a la publicacion",
+    "przejdz do posta",
+    "beitrag ansehen",
+    "перейти до допису",
+    "ga till inlagget",
+    "ga til innlegg",
+    "naar bericht gaan",
+    "перейти к публикации",
+    "acceder a la publication",
+    "ir para o post",
+    "投稿へ移動",
+    "打开帖子",
+  ];
+  const REEL_COPY_LINK_MARKER_TEXTS = [
+    "copy link",
+    "copiar enlace",
+    "kopiuj link",
+    "link kopieren",
+    "копіювати посилання",
+    "kopiera lanken",
+    "kopier lenke",
+    "link kopieren",
+    "копировать ссылку",
+    "copier le lien",
+    "copiar link",
+    "リンクをコピー",
+    "复制链接",
+  ];
 
   function normalizeMenuText(text) {
     return (text || "")
@@ -66,6 +411,31 @@
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/…/g, "...");
+  }
+
+  function getUiLang() {
+    const htmlLang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
+    if (htmlLang.startsWith("es")) return "es";
+    if (htmlLang.startsWith("pl")) return "pl";
+    if (htmlLang.startsWith("de")) return "de";
+    if (htmlLang.startsWith("uk")) return "uk";
+    if (htmlLang.startsWith("sv")) return "sv";
+    if (htmlLang.startsWith("nb") || htmlLang.startsWith("nn") || htmlLang.startsWith("no")) return "no";
+    if (htmlLang.startsWith("nl")) return "nl";
+    if (htmlLang.startsWith("ru")) return "ru";
+    if (htmlLang.startsWith("fr")) return "fr";
+    if (htmlLang.startsWith("pt-br")) return "ptbr";
+    if (htmlLang.startsWith("pt")) return "ptbr";
+    if (htmlLang.startsWith("ja")) return "ja";
+    if (htmlLang.startsWith("zh-cn") || htmlLang.startsWith("zh-hans") || htmlLang.startsWith("zh-sg") || htmlLang.startsWith("zh")) return "zhcn";
+
+    return "en";
+  }
+
+  function t(key, ...args) {
+    const dict = UI_STRINGS[getUiLang()] || UI_STRINGS.en;
+    const value = dict[key] || UI_STRINGS.en[key] || key;
+    return typeof value === "function" ? value(...args) : value;
   }
 
   // ---------------------------------------------------------------
@@ -499,14 +869,14 @@
 
     if (type === "story") {
       // Single button for stories
-      const dlBtn = createDownloadBtn(template, BUTTON_LABEL, () => {
+      const dlBtn = createDownloadBtn(template, t("buttonStory"), () => {
         if (!getStoryInfo()) return Promise.resolve({ success: false, error: "Not a story page" });
         return downloadCurrentStory();
       });
       insertBefore(menuContainer, dlBtn, cancelBtn);
     } else {
       // Two buttons for posts: "Download Current" and "Download All Media"
-      const currentBtn = createDownloadBtn(template, POST_CURRENT_LABEL, () => {
+      const currentBtn = createDownloadBtn(template, t("buttonPostCurrent"), () => {
         const shortcode = findPostShortcodeFromMenu(menuContainer);
         if (!shortcode) return Promise.resolve({ success: false, error: "Post not found" });
         const idx = getCarouselIndex();
@@ -516,7 +886,7 @@
       const mediaCount = getPostMediaCount();
       console.log("[Insta Saver] Detected media count for post:", mediaCount);
       if (mediaCount <= 1) {
-        const singleBtn = createDownloadBtn(template, POST_SINGLE_LABEL, () => {
+        const singleBtn = createDownloadBtn(template, t("buttonPostSingle"), () => {
           const shortcode = findPostShortcodeFromMenu(menuContainer);
           if (!shortcode) return Promise.resolve({ success: false, error: "Post not found" });
           const idx = getCarouselIndex();
@@ -526,7 +896,7 @@
         return;
       }
 
-      const allBtn = createDownloadBtn(template, POST_ALL_LABEL, () => {
+      const allBtn = createDownloadBtn(template, t("buttonPostAll"), () => {
         const shortcode = findPostShortcodeFromMenu(menuContainer);
         if (!shortcode) return Promise.resolve({ success: false, error: "Post not found" });
         return downloadPost(shortcode, "post");
@@ -547,21 +917,21 @@
     dlBtn.setAttribute("data-insta-saver", "true");
 
     // Set the text in the deeply nested span
-    setNestedText(dlBtn, REEL_LABEL);
+    setNestedText(dlBtn, t("buttonReel"));
     styleReelButton(dlBtn, "#00c853");
 
     dlBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
 
-      setNestedText(dlBtn, "Downloading…");
+      setNestedText(dlBtn, t("statusDownloading"));
 
       const shortcode = findReelShortcodeFromMenu(menuContainer);
       if (!shortcode) {
-        setNestedText(dlBtn, "Reel not found!");
+        setNestedText(dlBtn, t("statusReelNotFound"));
         styleReelButton(dlBtn, "#ff5252");
         setTimeout(() => {
-          setNestedText(dlBtn, REEL_LABEL);
+          setNestedText(dlBtn, t("buttonReel"));
           styleReelButton(dlBtn, "#00c853");
         }, 2500);
         return;
@@ -569,16 +939,16 @@
 
       downloadPost(shortcode, "reel").then((response) => {
         if (response && response.success) {
-          setNestedText(dlBtn, "Downloaded");
+          setNestedText(dlBtn, t("statusDownloadedSingle"));
           styleReelButton(dlBtn, "#00c853");
         } else {
           const err = (response && response.error) || "Unknown error";
           console.warn("[Insta Saver] Reel download failed:", err);
-          setNestedText(dlBtn, "Failed — retry");
+          setNestedText(dlBtn, t("statusFailedRetry"));
           styleReelButton(dlBtn, "#ff5252");
         }
         setTimeout(() => {
-          setNestedText(dlBtn, REEL_LABEL);
+          setNestedText(dlBtn, t("buttonReel"));
           styleReelButton(dlBtn, "#00c853");
         }, 2500);
       });
@@ -634,18 +1004,20 @@
       e.preventDefault();
       e.stopPropagation();
 
-      dlBtn.textContent = "Downloading…";
+      dlBtn.textContent = t("statusDownloading");
 
       downloadFn().then((response) => {
         if (response && response.success) {
           const count = response.downloaded || 1;
           const total = response.total || 1;
-          dlBtn.textContent = total > 1 ? `Downloaded ${count}/${total} ✓` : "Downloaded ✓";
+          dlBtn.textContent = total > 1
+            ? t("statusDownloadedMulti", count, total)
+            : t("statusDownloadedSingle");
           dlBtn.style.color = "#00c853";
         } else {
           const err = (response && response.error) || "Unknown error";
           console.warn("[Insta Saver] Download failed:", err);
-          dlBtn.textContent = "Failed — retry";
+          dlBtn.textContent = t("statusFailedRetry");
           dlBtn.style.color = "#ff5252";
         }
         setTimeout(() => {
