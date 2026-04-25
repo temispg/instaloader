@@ -14,11 +14,16 @@
   const POST_SINGLE_LABEL = "Download";
   const REEL_LABEL = "Download Reel";
 
+  const CANCEL_MARKER_TEXTS = ["cancel", "cancelar"];
+
   // Texts that appear in story menus
   const STORY_MARKER_TEXTS = [
     "report inappropriate",
     "report",
     "about this account",
+    "reportar contenido inapropiado",
+    "reportar",
+    "informacion sobre esta cuenta",
   ];
 
   // Texts that appear in feed post/reel menus
@@ -33,7 +38,35 @@
     "unfollow",
     "add to favorites",
     "remove from favorites",
+    "reportar",
+    "deja de seguir",
+    "agregar a favoritos",
+    "ir a la publicacion",
+    "compartir en",
+    "copiar enlace",
+    "insertar",
+    "informacion sobre esta cuenta",
+    "cancelar",
   ];
+
+  const REEL_REPORT_MARKER_TEXTS = [
+    "report",
+    "reportar",
+    "report inappropriate",
+    "reportar contenido inapropiado",
+  ];
+
+  const REEL_GOTO_POST_MARKER_TEXTS = ["go to post", "ir a la publicacion"];
+  const REEL_COPY_LINK_MARKER_TEXTS = ["copy link", "copiar enlace"];
+
+  function normalizeMenuText(text) {
+    return (text || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/…/g, "...");
+  }
 
   // ---------------------------------------------------------------
   // 1. Parse info from the current URL / page context
@@ -399,10 +432,10 @@
       const buttons = el.querySelectorAll(":scope > button");
       if (buttons.length >= 2) {
         const texts = Array.from(buttons).map((b) =>
-          b.textContent.trim().toLowerCase()
+          normalizeMenuText(b.textContent)
         );
 
-        const hasCancel = texts.includes("cancel");
+        const hasCancel = texts.some((t) => CANCEL_MARKER_TEXTS.includes(t));
         if (hasCancel) {
           const isStory = texts.some((t) =>
             STORY_MARKER_TEXTS.some((m) => t.includes(m))
@@ -423,11 +456,17 @@
       );
       if (roleItems.length >= 3) {
         const texts = Array.from(roleItems).map((b) =>
-          b.textContent.trim().toLowerCase()
+          normalizeMenuText(b.textContent)
         );
-        const hasReport = texts.some((t) => t.includes("report"));
-        const hasGoToPost = texts.some((t) => t.includes("go to post"));
-        const hasCopyLink = texts.some((t) => t.includes("copy link"));
+        const hasReport = texts.some((t) =>
+          REEL_REPORT_MARKER_TEXTS.some((m) => t.includes(m))
+        );
+        const hasGoToPost = texts.some((t) =>
+          REEL_GOTO_POST_MARKER_TEXTS.some((m) => t.includes(m))
+        );
+        const hasCopyLink = texts.some((t) =>
+          REEL_COPY_LINK_MARKER_TEXTS.some((m) => t.includes(m))
+        );
         if (hasReport && (hasGoToPost || hasCopyLink)) {
           return { type: "reel", el };
         }
@@ -450,7 +489,7 @@
 
     let cancelBtn = null;
     for (const btn of buttons) {
-      if (btn.textContent.trim().toLowerCase() === "cancel") {
+      if (CANCEL_MARKER_TEXTS.includes(normalizeMenuText(btn.textContent))) {
         cancelBtn = btn;
         break;
       }
