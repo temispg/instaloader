@@ -17,7 +17,6 @@ A Chrome extension to download Instagram stories, posts, and reels directly from
 
 ## Supported Languages
 
-This extension supports the following languages for its interface and download buttons:
 - English
 - Spanish
 - Polish
@@ -28,7 +27,9 @@ This extension supports the following languages for its interface and download b
 - Dutch
 - Russian
 - French
-- Portuguese
+- Portuguese (Brazil)
+- Japanese
+- Chinese (Simplified)
 
 ## Usage
 
