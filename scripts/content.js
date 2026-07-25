@@ -404,6 +404,25 @@
     "复制链接",
   ];
 
+  // Menu items that ONLY appear in post menus (never in reel menus).
+  // "Embed" is definitively post-exclusive — reels cannot be embedded.
+  // Used to disambiguate on feed / For You pages where the URL lacks /p/.
+  const POST_EXCLUSIVE_MARKER_TEXTS = [
+    "embed",
+    "insertar",
+    "kod osadzania",
+    "einbetten",
+    "вставити",
+    "badda in",
+    "bygg inn",
+    "insluiten",
+    "вставить на сайт",
+    "integrer",
+    "incorporar",
+    "埋め込み",
+    "内嵌",
+  ];
+
   function normalizeMenuText(text) {
     return (text || "")
       .trim()
@@ -651,7 +670,9 @@
     return 0;
   }
 
-  // Detect carousel from the presence of both prev AND next navigation buttons
+  // Detect carousel from the presence of prev OR next navigation buttons.
+  // Instagram may only render the "Next" button on the first slide and only
+  // "Go back" on subsequent slides, so either one alone confirms a carousel.
   function detectCarouselFromButtons(root) {
     if (!root) return false;
     const buttons = root.querySelectorAll('button[aria-label]');
@@ -660,10 +681,9 @@
     for (const btn of buttons) {
       const label = btn.getAttribute("aria-label").toLowerCase();
       if (label === "next" || label === "go forward") hasNext = true;
-      if (label === "go back") hasPrev = true;
+      if (label === "go back" || label === "previous") hasPrev = true;
     }
-    // Require both directions to avoid false positives from standalone buttons
-    return hasNext && hasPrev;
+    return hasNext || hasPrev;
   }
 
   function getPostMediaCount() {
@@ -798,36 +818,46 @@
     const candidates = [node, ...node.querySelectorAll("div")];
 
     for (const el of candidates) {
-      // --- Path A: <button>-based menus (stories + posts) ---
-      const buttons = el.querySelectorAll(":scope > button");
-      if (buttons.length >= 2) {
-        const texts = Array.from(buttons).map((b) =>
-          normalizeMenuText(b.textContent)
-        );
+      // Gather ALL clickable menu items: <button>, [role="button"], [role="link"]
+      // Instagram now uses <div role="button"> instead of <button> for most menus.
+      const items = el.querySelectorAll(
+        ':scope > button, :scope > [role="button"], :scope > [role="link"]'
+      );
+      if (items.length < 2) continue;
 
-        const hasCancel = texts.some((t) => CANCEL_MARKER_TEXTS.includes(t));
-        if (hasCancel) {
-          const isStory = texts.some((t) =>
-            STORY_MARKER_TEXTS.some((m) => t.includes(m))
-          );
-          const isPost = texts.some((t) =>
-            POST_MARKER_TEXTS.some((m) => t.includes(m))
-          );
-          if (isStory && getStoryInfo()) return { type: "story", el };
-          if (isPost) return { type: "post", el };
-          if (isStory) return { type: "story", el };
-        }
+      const texts = Array.from(items).map((item) =>
+        normalizeMenuText(item.textContent)
+      );
+
+      const hasCancel = texts.some((t) => CANCEL_MARKER_TEXTS.includes(t));
+
+      // --- Story / Post detection (menus with a Cancel item) ---
+      if (hasCancel) {
+        const isStory = texts.some((t) =>
+          STORY_MARKER_TEXTS.some((m) => t.includes(m))
+        );
+        const isPost = texts.some((t) =>
+          POST_MARKER_TEXTS.some((m) => t.includes(m))
+        );
+        if (isStory && getStoryInfo()) return { type: "story", el };
+        if (isPost) return { type: "post", el };
+        if (isStory) return { type: "story", el };
       }
 
-      // --- Path B: role-based menus (reels) ---
-      // Reel menus use <div role="button"> and <a role="link"> instead of <button>
-      const roleItems = el.querySelectorAll(
-        ':scope > [role="button"], :scope > [role="link"]'
-      );
-      if (roleItems.length >= 3) {
-        const texts = Array.from(roleItems).map((b) =>
-          normalizeMenuText(b.textContent)
+      // --- URL-based post detection (fallback when Cancel is absent) ---
+      const urlPath = window.location.pathname;
+      const isPostUrl = /\/p\/[A-Za-z0-9_-]+/.test(urlPath);
+      const isReelUrl = /\/reel[s]?\/[A-Za-z0-9_-]+/.test(urlPath);
+
+      if (isPostUrl) {
+        const hasPostMarkers = texts.some((t) =>
+          POST_MARKER_TEXTS.some((m) => t.includes(m))
         );
+        if (hasPostMarkers) return { type: "post", el };
+      }
+
+      // --- Reel detection (role-based menus without Cancel) ---
+      if (items.length >= 3) {
         const hasReport = texts.some((t) =>
           REEL_REPORT_MARKER_TEXTS.some((m) => t.includes(m))
         );
@@ -838,6 +868,27 @@
           REEL_COPY_LINK_MARKER_TEXTS.some((m) => t.includes(m))
         );
         if (hasReport && (hasGoToPost || hasCopyLink)) {
+          // Disambiguate: if URL says /p/ it's a post, not a reel
+          if (isPostUrl) return { type: "post", el };
+
+          // On a dedicated /reel/SHORTCODE/ page the content is always a
+          // reel, regardless of DOM structure (Instagram may wrap it in
+          // <article>) or menu text variations.
+          if (isReelUrl) return { type: "reel", el };
+
+          // Post-exclusive menu items ("Embed" and translations) never
+          // appear in reel menus — their presence confirms a post.
+          const hasPostExclusive = texts.some((t) =>
+            POST_EXCLUSIVE_MARKER_TEXTS.some((m) => t.includes(m))
+          );
+          if (hasPostExclusive) return { type: "post", el };
+
+          // On feed / For You pages the URL has no /p/ shortcode, but posts
+          // are always rendered inside an <article> element.  The full-screen
+          // reel player does NOT use <article>, so this reliably separates
+          // inline feed posts from reels.
+          if (el.closest("article")) return { type: "post", el };
+
           return { type: "reel", el };
         }
       }
@@ -854,18 +905,23 @@
       return;
     }
 
-    const buttons = menuContainer.querySelectorAll(":scope > button");
-    if (buttons.length === 0) return;
+    // Find menu items: both <button> and role-based elements
+    const items = menuContainer.querySelectorAll(
+      ':scope > button, :scope > [role="button"], :scope > [role="link"]'
+    );
+    if (items.length === 0) return;
 
-    let cancelBtn = null;
-    for (const btn of buttons) {
-      if (CANCEL_MARKER_TEXTS.includes(normalizeMenuText(btn.textContent))) {
-        cancelBtn = btn;
+    let cancelItem = null;
+    for (const item of items) {
+      if (CANCEL_MARKER_TEXTS.includes(normalizeMenuText(item.textContent))) {
+        cancelItem = item;
         break;
       }
     }
 
-    const template = cancelBtn || buttons[0];
+    const template = cancelItem || items[0];
+    // Reference node for insertion: Cancel button, or last item as fallback
+    const refNode = cancelItem || items[items.length - 1];
 
     if (type === "story") {
       // Single button for stories
@@ -873,7 +929,7 @@
         if (!getStoryInfo()) return Promise.resolve({ success: false, error: "Not a story page" });
         return downloadCurrentStory();
       });
-      insertBefore(menuContainer, dlBtn, cancelBtn);
+      insertBefore(menuContainer, dlBtn, refNode);
     } else {
       // Two buttons for posts: "Download Current" and "Download All Media"
       const currentBtn = createDownloadBtn(template, t("buttonPostCurrent"), () => {
@@ -892,7 +948,7 @@
           const idx = getCarouselIndex();
           return downloadPostSingle(shortcode, idx, "post");
         });
-        insertBefore(menuContainer, singleBtn, cancelBtn);
+        insertBefore(menuContainer, singleBtn, refNode);
         return;
       }
 
@@ -902,8 +958,8 @@
         return downloadPost(shortcode, "post");
       });
 
-      // Insert both before Cancel (current first, then all)
-      insertBefore(menuContainer, allBtn, cancelBtn);
+      // Insert both before reference node (current first, then all)
+      insertBefore(menuContainer, allBtn, refNode);
       insertBefore(menuContainer, currentBtn, allBtn);
     }
   }
@@ -992,37 +1048,60 @@
     }
   }
 
+  // Set the visible label on a download button, handling both plain <button>
+  // elements (textContent) and role-based <div> items with nested spans.
+  function setButtonLabel(el, text) {
+    const spans = el.querySelectorAll("span");
+    if (spans.length > 0) {
+      setNestedText(el, text);
+    } else {
+      el.textContent = text;
+    }
+  }
+
+  // Apply color styling to a download button and any nested spans.
+  function setButtonColor(el, color) {
+    el.style.color = color;
+    el.style.fontWeight = "600";
+    const spans = el.querySelectorAll("span");
+    for (const span of spans) {
+      span.style.color = color;
+      span.style.fontWeight = "600";
+    }
+  }
+
   function createDownloadBtn(template, label, downloadFn) {
     const dlBtn = template.cloneNode(true);
-    dlBtn.textContent = label;
     dlBtn.setAttribute("data-insta-saver", "true");
     dlBtn.setAttribute("tabindex", "0");
-    dlBtn.style.color = "#00c853";
-    dlBtn.style.fontWeight = "600";
+
+    setButtonLabel(dlBtn, label);
+    setButtonColor(dlBtn, "#00c853");
 
     dlBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
 
-      dlBtn.textContent = t("statusDownloading");
+      setButtonLabel(dlBtn, t("statusDownloading"));
 
       downloadFn().then((response) => {
         if (response && response.success) {
           const count = response.downloaded || 1;
           const total = response.total || 1;
-          dlBtn.textContent = total > 1
+          const successText = total > 1
             ? t("statusDownloadedMulti", count, total)
             : t("statusDownloadedSingle");
-          dlBtn.style.color = "#00c853";
+          setButtonLabel(dlBtn, successText);
+          setButtonColor(dlBtn, "#00c853");
         } else {
           const err = (response && response.error) || "Unknown error";
           console.warn("[Insta Saver] Download failed:", err);
-          dlBtn.textContent = t("statusFailedRetry");
-          dlBtn.style.color = "#ff5252";
+          setButtonLabel(dlBtn, t("statusFailedRetry"));
+          setButtonColor(dlBtn, "#ff5252");
         }
         setTimeout(() => {
-          dlBtn.textContent = label;
-          dlBtn.style.color = "#00c853";
+          setButtonLabel(dlBtn, label);
+          setButtonColor(dlBtn, "#00c853");
         }, 2500);
       });
     });

@@ -177,7 +177,12 @@ function extractPostMedia(item) {
   if (!item) return [];
 
   const results = [];
-  const username = item.user?.username || "";
+  // Instagram may nest the username in different locations depending on API version
+  const username =
+    item.user?.username ||
+    item.owner?.username ||
+    item.username ||
+    "";
 
   // Carousel post (multiple images/videos)
   if (item.carousel_media && item.carousel_media.length > 0) {
